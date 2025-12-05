@@ -1,51 +1,51 @@
 package org.firstinspires.ftc.teamcode.teleop.subsystem;
 
-import com.qualcomm.hardware.lynx.LynxModule;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.ColorSensor;
-import com.qualcomm.hardware.rev.RevTouchSensor;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.util.ElapsedTime;
-
-
-
-import java.util.List;
-
 
 @TeleOp(name="ShooterTest")
 public class ShooterTest extends LinearOpMode {
 
-    DcMotorEx L;
-    DcMotorEx R;
- 
-    public static double drive_speed_M = 1;
-
+    private ShooterSubsystem shooter;
 
     @Override
     public void runOpMode() throws InterruptedException {
 
+        DcMotorEx L = hardwareMap.get(DcMotorEx.class, "L");
+        DcMotorEx R = hardwareMap.get(DcMotorEx.class, "R");
 
-        R = hardwareMap.get(DcMotorEx.class, "r");
-        L = hardwareMap.get(DcMotorEx.class, "lt");
-       
+        shooter = new ShooterSubsystem(L, R);
+
+        telemetry.addLine("ShooterTest READY");
+        telemetry.update();
 
         waitForStart();
+
         while (opModeIsActive()) {
 
-            //////////////////////////
-            /// Gamepad 1 controls ///
-            //////////////////////////
-            // --- Drivetrain Control ---
-            if (gamepad1.x)
-		
-		L.setPower(.5);
-		R.setPower(.5);
+            // PRESS X → test at 4 ft (0.75)
+            if (gamepad1.x) {
+                shooter.setShooterSpeedFromDistance(4.0);
+            }
 
+            // PRESS Y → test at 8 ft (mid value)
+            if (gamepad1.y) {
+                shooter.setShooterSpeedFromDistance(8.0);
+            }
 
+            // PRESS B → test at 11 ft (1.0)
+            if (gamepad1.b) {
+                shooter.setShooterSpeedFromDistance(11.0);
+            }
+
+            // PRESS A → stop shooter
+            if (gamepad1.a) {
+                shooter.stopShooter();
+            }
+
+            telemetry.addLine("Press X/Y/B to test shooter power.");
+            telemetry.update();
         }
     }
 }

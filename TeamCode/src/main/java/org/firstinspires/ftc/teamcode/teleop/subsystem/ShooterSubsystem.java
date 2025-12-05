@@ -1,69 +1,58 @@
 package org.firstinspires.ftc.teamcode.teleop.subsystem;
 
-import com.acmerobotics.dashboard.config.Config;
-import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.HardwareMap;
 
-@Config
 public class ShooterSubsystem {
 
-    private final DcMotorEx spin1, spin2;
-    private final PIDController controller;
+    private DcMotorEx L;
+    private DcMotorEx R;
 
-    // PID constants (tune these)
-    public static double P = 0.0005;
-    public static double I = 0.0001;
-    public static double D = 0;
+    // Shooter constants
+    private static final double MIN_SPEED = 0.75;   // At 4 ft and below
+    private static final double MAX_SPEED = 1.00;   // At 11 ft
+    private static final double MIN_DIST = 4.0;     // ft
+    private static final double MAX_DIST = 11.0;    // ft
 
-    // Target velocity in ticks per second
-    public static double targetVelocity = 2000;
-
-    // Store PID outputs for telemetry
-    public double pid1;
-    public double pid2;
-
-    public ShooterSubsystem(HardwareMap hardwareMap) {
-        spin1 = hardwareMap.get(DcMotorEx.class, "spin1");
-        spin2 = hardwareMap.get(DcMotorEx.class, "spin2");
-
-        spin1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        spin2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-
-        controller = new PIDController(P, I, D);
+    public ShooterSubsystem(DcMotorEx left, DcMotorEx right) {
+        this.L = left;
+        this.R = right;
     }
 
-    public void setTargetVelocity(double velocity) {
-        targetVelocity = velocity;
+    /**
+     * Given distance in feet, compute shooter power:
+     *  - Below 4 ft: always 0.75
+     *  - Between 4 and 11 ft: linear scale to 1.0
+     *  - Above 11 ft: clamp to 1.0
+     */
+    public double computeShooterSpeed(double distanceFt) {
+        if (distanceFt <= MIN_DIST) {
+            return MIN_SPEED;
+        }
+        if (distanceFt >= MAX_DIST) {
+            return MAX_SPEED;
+        }
+
+        // Linear interpolation
+        double slope = (MAX_SPEED - MIN_SPEED) / (MAX_DIST - MIN_DIST);
+        return MIN_SPEED + slope * (distanceFt - MIN_DIST);
     }
 
-    public double getSpin1Velocity() {
-        return spin1.getVelocity();
+    /**
+     * Sets BOTH shooter motors to the correct speed based on distance.
+     */
+    public void setShooterSpeedFromDistance(double distanceFt) {
+        double speed = computeShooterSpeed(distanceFt);
+
+        // YOUR robot: left motor forward, right reversed
+        L.setPower(speed);
+        R.setPower(-speed);
     }
 
-    public double getSpin2Velocity() {
-        return spin2.getVelocity();
-    }
-
-    public double getPid1() {
-        return pid1;
-    }
-
-    public double getPid2() {
-        return pid2;
-    }
-
-    public void update() {
-        // PID calculation based on current velocity
-        pid1 = controller.calculate(spin1.getVelocity(), targetVelocity);
-        pid2 = controller.calculate(spin2.getVelocity(), targetVelocity);
-
-        // Clip power to [-1, 1]
-        pid1 = Math.max(-1, Math.min(1, pid1));
-        pid2 = Math.max(-1, Math.min(1, pid2));
-
-        // Apply power to motors
-        spin1.setPower(pid1);
-        spin2.setPower(pid2);
+    /**
+     * Stop both shooter motors.
+     */
+    public void stopShooter() {
+        L.setPower(0);
+        R.setPower(0);
     }
 }
